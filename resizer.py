@@ -6,7 +6,9 @@ import random
 import cv2
 import os
 
-def get_datetime():
+def get_datetime(display=False):
+    if display:
+        return datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     return datetime.now().strftime("%d%m%Y%H%M%S")
 
 def generate_random_string(k=16):
