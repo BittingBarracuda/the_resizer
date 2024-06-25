@@ -2,8 +2,12 @@ import streamlit as st
 from resizer import resize_image, delete_file, get_datetime, generate_random_string
 import os
 
-MAX_FREE_FILES = 10
+MAX_FREE_FILES = 1_000
 FILE_UPLOADER_KEY = 'file_uploader_key'
+
+def delete_file_st(zipfile_name):
+    print(f'[! {get_datetime(True)}] Downloading {zipfile_name} --- Contains {len(file_uploader)} files!')
+    delete_file(zipfile_name)
 
 if FILE_UPLOADER_KEY not in st.session_state:
     st.session_state[FILE_UPLOADER_KEY] = 0
@@ -62,10 +66,10 @@ if start_conversion and (file_uploader is not None):
                                                  key='download_button',
                                                  data=file,
                                                  file_name=zipfile_name,
+                                                 on_click=delete_file_st,
+                                                 args=(zipfile_name, ),
                                                  mime='application/zip')
-        if download_button:
-            print(f'[! {get_datetime()}] Downloading {zipfile_name} --- Contains {len(file_uploader)} files!')
-            delete_file(zipfile_name)
+            
 
 if delete_button:
     st.session_state[FILE_UPLOADER_KEY] += 1
