@@ -16,31 +16,39 @@ file_uploader = st.file_uploader('Choose your files',
                                  accept_multiple_files=True,
                                  key=st.session_state[FILE_UPLOADER_KEY])
 
+st.markdown('#')
 dimension_slider = st.slider('Size multiplier (keeps aspect ratio)',
                             min_value=0.1,
                             max_value=10.0,
                             key='dimension_slider',
                             step=0.1)
 
+st.markdown('#')
 c1, c2 = st.columns(2)
 with c1:
     x_dim = st.number_input('Horizontal pixels', 
-                            key='x_dim')
+                            key='x_dim',
+                            min_value=1,
+                            step=1)
 with c2:
     y_dim = st.number_input('Vertical pixels',
-                            key='y_dim')
+                            key='y_dim',
+                            min_value=1,
+                            step=1)
 
-    
-c1, c2 = st.columns(2)
-with c1:
-    dimension_checkbox = st.checkbox('Resize by multiplier',
-                                     value=True,
-                                     key='dimension_checkbox')
-with c2:
-    sizes_checkbox = st.checkbox('Resize by horizontal and vertial dimensions',
-                                 value=False,
-                                 key='sizes_checkbox')
-    
+st.markdown('#')   
+select_box = st.selectbox('Resize by', options=['Multiplier', 'Horizontal and vertical sizes'])
+# c1, c2 = st.columns(2)
+# with c1:
+#     dimension_checkbox = st.checkbox('Resize by multiplier',
+#                                      value=True,
+#                                      key='dimension_checkbox')
+# with c2:
+#     sizes_checkbox = st.checkbox('Resize by horizontal and vertical dimensions',
+#                                  value=False,
+#                                  key='sizes_checkbox')
+
+st.markdown('#')   
 c1, c2 = st.columns(2)
 with c1:
     delete_button = st.button('Clear uploaded files',
@@ -49,17 +57,17 @@ with c2:
     start_conversion = st.button('Start conversion', 
                                  key='start_conversion')
 
-if sizes_checkbox:
-    dimension_checkbox = False 
-if dimension_checkbox:
-    sizes_checkbox = False
+# if sizes_checkbox:
+#     dimension_checkbox = False 
+# if dimension_checkbox:
+#     sizes_checkbox = False
 
 if start_conversion and (file_uploader is not None):
     n = len(file_uploader)
     if n < MAX_FREE_FILES:
-        if dimension_checkbox:
+        if select_box == 'Multiplier':
             zipfile_name = resize_image(file_uploader, multiplier=dimension_slider)
-        if sizes_checkbox:
+        else:
             zipfile_name = resize_image(file_uploader, size_x=x_dim, size_y=y_dim)
         with open(os.path.join('files', zipfile_name), 'rb') as file:
             download_button = st.download_button('Download data!', 
