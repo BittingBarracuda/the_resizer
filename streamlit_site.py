@@ -2,7 +2,7 @@ import streamlit as st
 from resizer import resize_image, delete_file, get_datetime, generate_random_string
 import os
 
-MAX_FREE_FILES = 1_000
+MAX_FREE_FILES = 10_000
 FILE_UPLOADER_KEY = 'file_uploader_key'
 
 def delete_file_st(zipfile_name):
@@ -63,12 +63,13 @@ with c2:
 #     sizes_checkbox = False
 
 if start_conversion and (file_uploader is not None):
+    progress_bar = st.progress(0, 'Operation in process. Please wait.')
     n = len(file_uploader)
     if n < MAX_FREE_FILES:
         if select_box == 'Multiplier':
-            zipfile_name = resize_image(file_uploader, multiplier=dimension_slider)
+            zipfile_name = resize_image(file_uploader, progress_bar, multiplier=dimension_slider)
         else:
-            zipfile_name = resize_image(file_uploader, size_x=x_dim, size_y=y_dim)
+            zipfile_name = resize_image(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim)
         with open(os.path.join('files', zipfile_name), 'rb') as file:
             download_button = st.download_button('Download data!', 
                                                  key='download_button',

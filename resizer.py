@@ -1,4 +1,5 @@
 from datetime import datetime
+import streamlit as st
 import numpy as np
 import zipfile
 import string
@@ -26,12 +27,32 @@ def create_zip_file(converted_imgs, file_names):
             file.writestr(file_name, buf)
     return zipfile_name
 
-def resize_image(images_data, multiplier=None, size_x=None, size_y=None):
+def merge_zip_files(zip_files_names):
+    print(f'[! {get_datetime(True)}] Merging {zip_files_names}')
+    with zipfile.ZipFile(os.path.join('files', zip_files_names[0]), 'a') as file:
+        for zip_name in zip_files_names[1:]:
+            with zipfile.ZipFile(os.path.join('files', zip_name), 'r') as zip_file:
+                # print(f'[{get_datetime(True)}] Processing {zip_name}')
+                for name in zip_file.namelist():
+                    # print(f'[{get_datetime(True)}] Processing {name}')
+                    file.writestr(name, zip_file.open(name).read())
+    
+    for zip_file_name in zip_files_names[1:]:
+        print(f'[! {get_datetime()}] Deleting files...')
+        delete_file(zip_file_name)
+    
+    return zip_files_names[0]
+
+def resize_image(images_data, progress_bar, multiplier=None, size_x=None, size_y=None):
     converted_imgs, file_names = [], []
-    for image_data in images_data:
+    zip_files = []
+    progress_per_img = 1.0 / len(images_data)
+    for i, image_data in enumerate(images_data):
+        progress_bar.progress((i + 1) * progress_per_img, 'Operation in process. Please wait.')
         jpg_as_np = np.fromstring(image_data.getvalue(), dtype=np.uint8)
         img = cv2.imdecode(jpg_as_np, cv2.IMREAD_COLOR)
         file_names.append(image_data.name)
+        # print(f'[! {get_datetime(True)}] Resizing {file_names[-1]}!')
 
         if multiplier != None:
             new_img = cv2.resize(img, 
@@ -45,4 +66,13 @@ def resize_image(images_data, multiplier=None, size_x=None, size_y=None):
                                 interpolation=cv2.INTER_LANCZOS4)
         
         converted_imgs.append(new_img)
-    return create_zip_file(converted_imgs, file_names)
+        if (i+1) % 50 == 0:
+            print(f'[! {get_datetime(True)}] {i+1} images read, creating zip file...')
+            zip_files.append(create_zip_file(converted_imgs, file_names))
+            converted_imgs, file_names = [], []
+    
+    progress_bar.progress(1.0, 'Process completed!')
+    if converted_imgs != []:
+        zip_files.append(create_zip_file(converted_imgs, file_names))
+
+    return merge_zip_files(zip_files)
