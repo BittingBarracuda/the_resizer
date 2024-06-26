@@ -2,7 +2,7 @@ import streamlit as st
 from resizer import resize_image, delete_file, get_datetime, generate_random_string
 import os
 
-MAX_FREE_FILES      = 1_00
+MAX_FREE_FILES      = 1_000
 FILE_UPLOADER_KEY   = 'file_uploader_key'
 MULTIPLIER_SEL      = 'mult_selected'
 NUMERIC_STATE       = 'numeric_state'
@@ -103,7 +103,7 @@ if start_conversion and (file_uploader is not None):
     petition_id = f'{generate_random_string(k=4)}_{get_datetime()}'
     
     if (n <= MAX_FREE_FILES) and (n > 0):
-        if select_box == 'Multiplier':
+        if select_box == 'Size multiplier':
             zipfile_name = resize_image(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
         else:
             zipfile_name = resize_image(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
