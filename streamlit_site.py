@@ -1,12 +1,12 @@
 import streamlit as st
-from resizer import resize_image, resize_image_np, delete_file, get_datetime
+from resizer import resize_image, delete_file, get_datetime, generate_random_string
 import os
 
-MAX_FREE_FILES = 1_000
-FILE_UPLOADER_KEY = 'file_uploader_key'
-MULTIPLIER_SEL = 'mult_selected'
-NUMERIC_STATE = 'numeric_state'
-SLIDER_STATE = 'slider_state'
+MAX_FREE_FILES      = 1_000
+FILE_UPLOADER_KEY   = 'file_uploader_key'
+MULTIPLIER_SEL      = 'mult_selected'
+NUMERIC_STATE       = 'numeric_state'
+SLIDER_STATE        = 'slider_state'
 
 def delete_file_st(zipfile_name):
     print(f'[! {get_datetime(True)}] Downloading {zipfile_name} --- Contains {len(file_uploader)} files!')
@@ -31,6 +31,7 @@ st.markdown('#')
 
 file_uploader = st.file_uploader('Choose your files', 
                                  accept_multiple_files=True,
+                                 type=['jpg', 'jpeg', 'png'],
                                  key=st.session_state[FILE_UPLOADER_KEY])
 
 st.markdown('#')   
@@ -43,17 +44,18 @@ c1, c2 = st.columns((3, 1))
 with c1:
     dimension_slider = st.slider('Size multiplier (keeps aspect ratio)',
                                 min_value=0.1,
-                                max_value=10.0,
-                                key=SLIDER_STATE,
+                                max_value=5.0,
                                 step=0.1,
+                                key=SLIDER_STATE,
                                 on_change=update_numeric,
                                 disabled=st.session_state[MULTIPLIER_SEL])
 with c2:
     numeric_input = st.number_input('Multiplier value',
                                     min_value=0.1,
-                                    max_value=10.0,
+                                    max_value=5.0,
                                     key=NUMERIC_STATE,
-                                    on_change=update_slider)
+                                    on_change=update_slider,
+                                    disabled=st.session_state[MULTIPLIER_SEL])
 
 st.markdown('#')
 c1, c2 = st.columns(2)
@@ -84,11 +86,13 @@ if start_conversion and (file_uploader is not None):
     st.markdown('#')
     progress_bar = st.progress(0, 'Operation in process. Please wait.')
     n = len(file_uploader)
-    if n < MAX_FREE_FILES:
+    petition_id = f'{generate_random_string(k=4)}_{get_datetime()}'
+    
+    if n <= MAX_FREE_FILES:
         if select_box == 'Multiplier':
-            zipfile_name = resize_image(file_uploader, progress_bar, multiplier=dimension_slider)
+            zipfile_name = resize_image(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
         else:
-            zipfile_name = resize_image(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim)
+            zipfile_name = resize_image(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
         
         progress_bar.progress(1.0, 'Process completed!')
         with open(os.path.join('files', zipfile_name), 'rb') as file:
@@ -99,6 +103,8 @@ if start_conversion and (file_uploader is not None):
                                                  on_click=delete_file_st,
                                                  args=(zipfile_name, ),
                                                  mime='application/zip')
+    else:
+        st.warning(f'Only {MAX_FREE_FILES} can be uploaded at once.')
             
 
 if delete_button:
