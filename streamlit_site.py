@@ -2,7 +2,7 @@ import streamlit as st
 from resizer import resize_image, delete_file, get_datetime, generate_random_string
 import os
 
-MAX_FREE_FILES      = 1_000
+MAX_FREE_FILES      = 1_00
 FILE_UPLOADER_KEY   = 'file_uploader_key'
 MULTIPLIER_SEL      = 'mult_selected'
 NUMERIC_STATE       = 'numeric_state'
@@ -27,7 +27,21 @@ if SLIDER_STATE not in st.session_state:
     st.session_state[SLIDER_STATE] = 1.0
 
 st.title('SIMPLE IMAGE RESIZER')
-st.markdown('#')
+st.markdown('''Welcome to ***Simple Image Resizer***, a super easy to use app to resize all your images for **FREE**.
+            In order to use this app you can check the instructions in the dropdown below. .
+            ''')
+aux = [
+    '1. ⬆️**Upload your images using the drag & drop menu below**⬆️. Our service supports uploading **up to 100 images at once (50MB per file max)**.',
+    '''2. ✅**Select how you want to resize your images**✅:
+    - **Size multiplier**: Adjust the size of your image(s) by a specified factor. This option will not alter the aspect ratio. For example, choosing a multiplier of 2.0 will double the size of your image(s).
+    - **Horizontal and vertical sizes**: Specify the exact dimensions of your image(s) in pixels. Note that this may change the aspect ratio of your images.''',
+    '''3. ⏳Once you have selected a resizing method and set the corresponding parameters (using the slider or the text boxes below), click the ***Start conversion*** button to begin the process. A progress bar will appear below this button once the process starts. Please note that the conversion may take some time depending on the number of images, their sizes, the new sizes, and the current server load.''',
+    '''4. ⬇️ When the process is complete, a ***Download data!*** button will appear below the progress bar. Click it to **download a .zip file containing all the resized images.**''',
+    '**Note**: You can clear your uploaded files using the ***Clear uploaded files*** button. This will delete all the uploaded files, allowing you to process a new batch of images.'
+]
+with st.expander(':book: Instructions :book:', expanded=False):
+    for line in aux:
+        st.markdown(line)
 
 file_uploader = st.file_uploader('Choose your files', 
                                  accept_multiple_files=True,
@@ -36,8 +50,8 @@ file_uploader = st.file_uploader('Choose your files',
 
 st.markdown('#')   
 select_box = st.selectbox('Resize by', 
-                          options=['Multiplier', 'Horizontal and vertical sizes'])
-st.session_state[MULTIPLIER_SEL] = (select_box != 'Multiplier')
+                          options=['Size multiplier', 'Horizontal and vertical sizes'])
+st.session_state[MULTIPLIER_SEL] = (select_box != 'Size multiplier')
 
 st.markdown('#')
 c1, c2 = st.columns((3, 1))
@@ -88,7 +102,7 @@ if start_conversion and (file_uploader is not None):
     n = len(file_uploader)
     petition_id = f'{generate_random_string(k=4)}_{get_datetime()}'
     
-    if n <= MAX_FREE_FILES:
+    if (n <= MAX_FREE_FILES) and (n > 0):
         if select_box == 'Multiplier':
             zipfile_name = resize_image(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
         else:
@@ -104,7 +118,7 @@ if start_conversion and (file_uploader is not None):
                                                  args=(zipfile_name, ),
                                                  mime='application/zip')
     else:
-        st.warning(f'Only {MAX_FREE_FILES} can be uploaded at once.')
+        st.warning(f'Only {MAX_FREE_FILES} can be uploaded at once. You will need to reupload them.')
             
 
 if delete_button:
