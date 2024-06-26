@@ -5,15 +5,29 @@ import os
 MAX_FREE_FILES = 1_000
 FILE_UPLOADER_KEY = 'file_uploader_key'
 MULTIPLIER_SEL = 'mult_selected'
+NUMERIC_STATE = 'numeric_state'
+SLIDER_STATE = 'slider_state'
 
 def delete_file_st(zipfile_name):
     print(f'[! {get_datetime(True)}] Downloading {zipfile_name} --- Contains {len(file_uploader)} files!')
     delete_file(zipfile_name)
+
+def update_slider():
+    st.session_state[SLIDER_STATE] = st.session_state[NUMERIC_STATE]
+def update_numeric():
+    st.session_state[NUMERIC_STATE] = st.session_state[SLIDER_STATE]
    
 if FILE_UPLOADER_KEY not in st.session_state:
     st.session_state[FILE_UPLOADER_KEY] = 0
 if MULTIPLIER_SEL not in st.session_state:
     st.session_state[MULTIPLIER_SEL] = False
+if NUMERIC_STATE not in st.session_state:
+    st.session_state[NUMERIC_STATE] = 1.0
+if SLIDER_STATE not in st.session_state:
+    st.session_state[SLIDER_STATE] = 1.0
+
+st.title('SIMPLE IMAGE RESIZER')
+st.markdown('#')
 
 file_uploader = st.file_uploader('Choose your files', 
                                  accept_multiple_files=True,
@@ -25,12 +39,21 @@ select_box = st.selectbox('Resize by',
 st.session_state[MULTIPLIER_SEL] = (select_box != 'Multiplier')
 
 st.markdown('#')
-dimension_slider = st.slider('Size multiplier (keeps aspect ratio)',
-                            min_value=0.1,
-                            max_value=10.0,
-                            key='dimension_slider',
-                            step=0.1,
-                            disabled=st.session_state[MULTIPLIER_SEL])
+c1, c2 = st.columns((3, 1))
+with c1:
+    dimension_slider = st.slider('Size multiplier (keeps aspect ratio)',
+                                min_value=0.1,
+                                max_value=10.0,
+                                key=SLIDER_STATE,
+                                step=0.1,
+                                on_change=update_numeric,
+                                disabled=st.session_state[MULTIPLIER_SEL])
+with c2:
+    numeric_input = st.number_input('Multiplier value',
+                                    min_value=0.1,
+                                    max_value=10.0,
+                                    key=NUMERIC_STATE,
+                                    on_change=update_slider)
 
 st.markdown('#')
 c1, c2 = st.columns(2)
@@ -55,6 +78,7 @@ with c1:
 with c2:
     start_conversion = st.button('Start conversion', 
                                  key='start_conversion')
+
 
 if start_conversion and (file_uploader is not None):
     st.markdown('#')
