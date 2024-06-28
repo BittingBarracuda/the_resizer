@@ -3,11 +3,13 @@ import streamlit as st
 import numpy as np
 import zipfile
 import string
+import shutil
 import random
 import cv2
 import os
 
 TEXT_1 = 'Operation in process. Please wait.'
+IMGS_DIR = os.path.join('files', 'imgs')
 
 def get_datetime(display=False):
     if display:
@@ -143,3 +145,45 @@ def resize_image_np(images_data, progress_bar, multiplier=None, size_x=None, siz
         all_files_names.extend(save_np_images(converted_imgs, file_names))
 
     return merge_np_images(all_files_names, progress_bar)
+
+def resize_imgs_temp(images_data, progress_bar, multiplier=None, size_x=None, size_y=None, petition_id=''):
+    progress_per_img = 1.0 / len(images_data)
+    zipfile_name = f'{generate_random_string()}_{get_datetime()}.zip'
+    aux_path = os.path.join(IMGS_DIR, petition_id)
+    
+    try:
+        os.mkdir(aux_path)
+    except FileExistsError:
+        pass
+
+    
+    with zipfile.ZipFile(os.path.join('files', zipfile_name), 'w') as file:
+        for i, image_data in enumerate(images_data):
+            progress_bar.progress((i + 1) * progress_per_img, TEXT_1)
+            jpg_as_np = np.fromstring(image_data.getvalue(), dtype=np.uint8)
+            img = cv2.imdecode(jpg_as_np, cv2.IMREAD_COLOR)
+            
+            if multiplier != None:
+                new_img = cv2.resize(img, 
+                                    dsize=None,
+                                    fx=multiplier, 
+                                    fy=multiplier,
+                                    interpolation=cv2.INTER_LANCZOS4)
+            else:
+                new_img = cv2.resize(img,
+                                    dsize=(size_x, size_y),
+                                    interpolation=cv2.INTER_LANCZOS4)
+            
+            extension = image_data.name[image_data.name.rindex('.')+1:]
+            temp_filename = os.path.join(aux_path, f'{generate_random_string()}_{get_datetime()}.{extension}')
+            
+            cv2.imwrite(temp_filename, new_img)
+            file.write(temp_filename, arcname=os.path.basename(temp_filename))
+            os.remove(temp_filename)
+
+            if (i+1) % 50 == 0:
+                print(f'[! RESIZER - {get_datetime(True)}] {i+1} images resized for petition {petition_id}')
+    
+    shutil.rmtree(aux_path)
+    print(f'[! RESIZER - {get_datetime(True)}] Total of {len(images_data)} images resized for petiton {petition_id}')
+    return zipfile_name

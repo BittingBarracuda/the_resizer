@@ -1,5 +1,5 @@
 import streamlit as st
-from resizer import resize_image, delete_file, get_datetime, generate_random_string
+from resizer import resize_image, resize_imgs_temp ,delete_file, get_datetime, generate_random_string
 import os
 
 MAX_FREE_FILES      = 1_000
@@ -9,7 +9,7 @@ NUMERIC_STATE       = 'numeric_state'
 SLIDER_STATE        = 'slider_state'
 
 def delete_file_st(zipfile_name):
-    print(f'[! {get_datetime(True)}] Downloading {zipfile_name} --- Contains {len(file_uploader)} files!')
+    print(f'[! STREAMLIT - {get_datetime(True)}] Downloading {zipfile_name} --- Contains {len(file_uploader)} files!')
     delete_file(zipfile_name)
 
 def update_slider():
@@ -26,8 +26,8 @@ if NUMERIC_STATE not in st.session_state:
 if SLIDER_STATE not in st.session_state:
     st.session_state[SLIDER_STATE] = 1.0
 
-st.title('SIMPLE IMAGE RESIZER')
-st.markdown('''Welcome to ***Simple Image Resizer***, a super easy to use app to resize all your images for **FREE**.
+st.title('SIMPLE BULK IMAGE RESIZER')
+st.markdown('''Welcome to ***Simple Bulk Image Resizer***, a super easy to use app to resize all your images for **FREE**.
             In order to use this app you can check the instructions in the dropdown below. .
             ''')
 aux = [
@@ -100,16 +100,16 @@ if start_conversion and (file_uploader is not None):
     st.markdown('#')
     progress_bar = st.progress(0, 'Operation in process. Please wait.')
     n = len(file_uploader)
-    petition_id = f'{generate_random_string(k=4)}_{get_datetime()}'
+    petition_id = f'{generate_random_string(k=20)}_{get_datetime()}'
     
     if (n <= MAX_FREE_FILES) and (n > 0):
         if select_box == 'Size multiplier':
-            zipfile_name = resize_image(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
+            zipfile_name = resize_imgs_temp(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
         else:
-            zipfile_name = resize_image(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
+            zipfile_name = resize_imgs_temp(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
         
-        progress_bar.progress(1.0, 'Process completed!')
         with open(os.path.join('files', zipfile_name), 'rb') as file:
+            progress_bar.progress(1.0, 'Process completed!')
             download_button = st.download_button('Download data!', 
                                                  key='download_button',
                                                  data=file,
