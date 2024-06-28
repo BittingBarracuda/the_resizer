@@ -45,17 +45,21 @@ def merge_np_images(np_files, progress_bar):
         delete_file(np_file)
     return zipfile_name
 
-def create_zip_file(converted_imgs, file_names):
-    zipfile_name = f'{generate_random_string()}_{get_datetime()}.zip'
-    with zipfile.ZipFile(os.path.join('files', zipfile_name), 'w') as file:
+def create_zip_file(converted_imgs, file_names, zipfile_name):
+    mode = ''
+    if os.path.exists(os.path.join('files', zipfile_name)):
+        mode = 'a'
+    else:
+        mode = 'w'
+    
+    with zipfile.ZipFile(os.path.join('files', zipfile_name), mode) as file:
         for converted_img, file_name in zip(converted_imgs, file_names):
             file_ext = file_name[file_name.rindex('.'):]
             _, buf = cv2.imencode(file_ext, converted_img)
             file.writestr(file_name, buf)
-    return zipfile_name
 
 def merge_zip_files(zip_files_names, progress_bar, petition_id):
-    print(f'[! {get_datetime(True)}] Merging {zip_files_names} for {petition_id} petition')
+    print(f'[! RESIZER - {get_datetime(True)}] Merging {zip_files_names} for {petition_id} petition')
     prog_per_file = 0.1 / len(zip_files_names)
 
     with zipfile.ZipFile(os.path.join('files', zip_files_names[0]), 'a') as file:
@@ -74,8 +78,8 @@ def merge_zip_files(zip_files_names, progress_bar, petition_id):
 
 def resize_image(images_data, progress_bar, multiplier=None, size_x=None, size_y=None, petition_id=''):
     converted_imgs, file_names = [], []
-    zip_files = []
-    progress_per_img = 0.9 / len(images_data)
+    progress_per_img = 1.0 / len(images_data)
+    zipfile_name = f'{generate_random_string()}_{get_datetime()}.zip'
     
     for i, image_data in enumerate(images_data):
         progress_bar.progress((i + 1) * progress_per_img, TEXT_1)
@@ -97,15 +101,14 @@ def resize_image(images_data, progress_bar, multiplier=None, size_x=None, size_y
         
         converted_imgs.append(new_img)
         if (i+1) % 50 == 0:
-            print(f'[! {get_datetime(True)}] {i+1} images read for petition {petition_id}, creating zip file...')
-            zip_files.append(create_zip_file(converted_imgs, file_names))
+            print(f'[! RESIZER - {get_datetime(True)}] {i+1} images read for petition {petition_id}, creating zip file...')
+            create_zip_file(converted_imgs, file_names, zipfile_name)
             converted_imgs, file_names = [], []
     
     if converted_imgs != []:
-        zip_files.append(create_zip_file(converted_imgs, file_names))
+        create_zip_file(converted_imgs, file_names, zipfile_name)
 
-    return merge_zip_files(zip_files, progress_bar, petition_id)
-
+    return zipfile_name
 
 def resize_image_np(images_data, progress_bar, multiplier=None, size_x=None, size_y=None):
     converted_imgs, file_names = [], []
@@ -132,7 +135,7 @@ def resize_image_np(images_data, progress_bar, multiplier=None, size_x=None, siz
         
         converted_imgs.append(new_img)
         if (i+1) % 50 == 0:
-            print(f'[! {get_datetime(True)}] {i+1} images read, creating numpy file...')
+            print(f'[! RESIZER - {get_datetime(True)}] {i+1} images read, creating numpy file...')
             all_files_names.extend(save_np_images(converted_imgs, file_names))
             converted_imgs, file_names = [], []
     
