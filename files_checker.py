@@ -4,7 +4,7 @@ import shutil
 import time
 import os
 
-MAX_TIME = 10
+MAX_TIME = 10 * 60
 current_files = {}
 current_directories = {}
 
