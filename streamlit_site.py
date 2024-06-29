@@ -2,7 +2,7 @@ import streamlit as st
 from resizer import resize_image, resize_imgs_temp ,delete_file, get_datetime, generate_random_string
 import os
 
-MAX_FREE_FILES      = 1_000
+MAX_FREE_FILES      = 100
 FILE_UPLOADER_KEY   = 'file_uploader_key'
 MULTIPLIER_SEL      = 'mult_selected'
 NUMERIC_STATE       = 'numeric_state'
@@ -16,6 +16,11 @@ def update_slider():
     st.session_state[SLIDER_STATE] = st.session_state[NUMERIC_STATE]
 def update_numeric():
     st.session_state[NUMERIC_STATE] = st.session_state[SLIDER_STATE]
+
+@st.experimental_dialog('Maximum number of files reached', width="large")
+def max_files_dialog(uploaded_files):
+    st.markdown(f'You have surpassed our maximum of {MAX_FREE_FILES} files uploaded at once.')
+    st.markdown(f'We will keep and process your first {MAX_FREE_FILES} images (from {uploaded_files[0].name} to {uploaded_files[-1].name}) but you **will need to reupload the rest**.')
    
 if FILE_UPLOADER_KEY not in st.session_state:
     st.session_state[FILE_UPLOADER_KEY] = 0
@@ -31,7 +36,7 @@ st.markdown('''Welcome to ***Simple Bulk Image Resizer***, a super easy to use a
             In order to use this app you can check the instructions in the dropdown below. .
             ''')
 aux = [
-    '1. ⬆️**Upload your images using the drag & drop menu below**⬆️. Our service supports uploading **up to 100 images at once (50MB per file max)**.',
+    f'1. ⬆️**Upload your images using the drag & drop menu below**⬆️. Our service supports uploading **up to {MAX_FREE_FILES} images at once (50MB per file max)**.',
     '''2. ✅**Select how you want to resize your images**✅:
     - **Size multiplier**: Adjust the size of your image(s) by a specified factor. This option will not alter the aspect ratio. For example, choosing a multiplier of 2.0 will double the size of your image(s).
     - **Horizontal and vertical sizes**: Specify the exact dimensions of your image(s) in pixels. Note that this may change the aspect ratio of your images.''',
@@ -102,24 +107,24 @@ if start_conversion and (file_uploader is not None):
     n = len(file_uploader)
     petition_id = f'{generate_random_string(k=20)}_{get_datetime()}'
     
-    if (n <= MAX_FREE_FILES) and (n > 0):
-        if select_box == 'Size multiplier':
-            zipfile_name = resize_imgs_temp(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
-        else:
-            zipfile_name = resize_imgs_temp(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
-        
-        with open(os.path.join('files', zipfile_name), 'rb') as file:
-            progress_bar.progress(1.0, 'Process completed!')
-            download_button = st.download_button('Download data!', 
-                                                 key='download_button',
-                                                 data=file,
-                                                 file_name=zipfile_name,
-                                                 on_click=delete_file_st,
-                                                 args=(zipfile_name, ),
-                                                 mime='application/zip')
+    if n > MAX_FREE_FILES:
+        max_files_dialog(file_uploader)
+        file_uploader = file_uploader[:MAX_FREE_FILES]
+
+    if select_box == 'Size multiplier':
+        zipfile_name = resize_imgs_temp(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
     else:
-        st.warning(f'Only {MAX_FREE_FILES} can be uploaded at once. You will need to reupload them.')
-            
+        zipfile_name = resize_imgs_temp(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
+        
+    with open(os.path.join('files', zipfile_name), 'rb') as file:
+        progress_bar.progress(1.0, 'Process completed!')
+        download_button = st.download_button('Download data!', 
+                                            key='download_button',
+                                            data=file,
+                                            file_name=zipfile_name,
+                                            on_click=delete_file_st,
+                                            args=(zipfile_name, ),
+                                            mime='application/zip')
 
 if delete_button:
     st.session_state[FILE_UPLOADER_KEY] += 1
