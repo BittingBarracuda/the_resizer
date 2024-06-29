@@ -1,5 +1,7 @@
-import streamlit as st
 from resizer import resize_image, resize_imgs_temp ,delete_file, get_datetime, generate_random_string
+from streamlit_extras.buy_me_a_coffee import button as kofi_button
+
+import streamlit as st
 import os
 
 MAX_FREE_FILES      = 100
@@ -53,12 +55,12 @@ file_uploader = st.file_uploader('Choose your files',
                                  type=['jpg', 'jpeg', 'png'],
                                  key=st.session_state[FILE_UPLOADER_KEY])
 
-st.markdown('#')   
+st.markdown('######')  
 select_box = st.selectbox('Resize by', 
                           options=['Size multiplier', 'Horizontal and vertical sizes'])
 st.session_state[MULTIPLIER_SEL] = (select_box != 'Size multiplier')
 
-st.markdown('#')
+st.markdown('######')
 c1, c2 = st.columns((3, 1))
 with c1:
     dimension_slider = st.slider('Size multiplier (keeps aspect ratio)',
@@ -76,7 +78,7 @@ with c2:
                                     on_change=update_slider,
                                     disabled=st.session_state[MULTIPLIER_SEL])
 
-st.markdown('#')
+st.markdown('######')
 c1, c2 = st.columns(2)
 with c1:
     x_dim = st.number_input('Horizontal pixels', 
@@ -91,7 +93,7 @@ with c2:
                             step=1,
                             disabled=(not st.session_state[MULTIPLIER_SEL]))
 
-st.markdown('#')   
+st.markdown('######')   
 c1, c2 = st.columns(2)
 with c1:
     delete_button = st.button('Clear uploaded files',
@@ -102,7 +104,7 @@ with c2:
 
 
 if start_conversion and (file_uploader is not None):
-    st.markdown('#')
+    # st.markdown('#')
     progress_bar = st.progress(0, 'Operation in process. Please wait.')
     n = len(file_uploader)
     petition_id = f'{generate_random_string(k=20)}_{get_datetime()}'
@@ -129,3 +131,5 @@ if start_conversion and (file_uploader is not None):
 if delete_button:
     st.session_state[FILE_UPLOADER_KEY] += 1
     st.rerun()
+
+kofi_button(username='')
