@@ -157,6 +157,9 @@ cython_debug/
 # Other extensions
 *.zip
 *.ps1
+*.jpg
+*.png 
+*.jpeg
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
