@@ -33,6 +33,7 @@ if NUMERIC_STATE not in st.session_state:
 if SLIDER_STATE not in st.session_state:
     st.session_state[SLIDER_STATE] = 1.0
 
+st.set_page_config(page_title="Simple Bulk Image Resizer")
 st.title('SIMPLE BULK IMAGE RESIZER')
 st.markdown('''Welcome to ***Simple Bulk Image Resizer***, a super easy to use app to resize all your images for **FREE**.
             In order to use this app you can check the instructions in the dropdown below. .
