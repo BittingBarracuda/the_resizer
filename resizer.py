@@ -11,6 +11,12 @@ import os
 TEXT_1 = 'Operation in process. Please wait.'
 IMGS_DIR = os.path.join('files', 'imgs')
 
+try:
+    os.mkdir('files')
+    os.mkdir(os.path.join('files', 'imgs'))
+except FileExistsError:
+    pass
+
 def get_datetime(display=False):
     if display:
         return datetime.now().strftime("%d/%m/%Y %H:%M:%S")
