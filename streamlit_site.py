@@ -22,7 +22,7 @@ def update_numeric():
 @st.experimental_dialog('Maximum number of files reached', width="large")
 def max_files_dialog(uploaded_files):
     st.markdown(f'You have surpassed our maximum of {MAX_FREE_FILES} files uploaded at once.')
-    st.markdown(f'We will keep and process your first {MAX_FREE_FILES} images (from {uploaded_files[0].name} to {uploaded_files[-1].name}) but you **will need to reupload the rest**.')
+    st.markdown(f'We will keep and process your first {MAX_FREE_FILES} images (from {uploaded_files[0].name} to {uploaded_files[MAX_FREE_FILES-1].name}) but you **will need to reupload the rest**.')
    
 if FILE_UPLOADER_KEY not in st.session_state:
     st.session_state[FILE_UPLOADER_KEY] = 0
