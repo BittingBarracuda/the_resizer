@@ -180,8 +180,7 @@ def resize_imgs_temp(images_data, progress_bar, multiplier=None, size_x=None, si
                                     dsize=(size_x, size_y),
                                     interpolation=cv2.INTER_LANCZOS4)
             
-            extension = image_data.name[image_data.name.rindex('.')+1:]
-            temp_filename = os.path.join(aux_path, f'{generate_random_string()}_{get_datetime()}.{extension}')
+            temp_filename = os.path.join(aux_path, image_data.name)
             
             cv2.imwrite(temp_filename, new_img)
             file.write(temp_filename, arcname=os.path.basename(temp_filename))
