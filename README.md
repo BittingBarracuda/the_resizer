@@ -1,1 +1,1 @@
-# the_resizer
+# Simple Bulk Image Resizer
