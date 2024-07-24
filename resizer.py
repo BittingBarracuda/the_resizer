@@ -186,8 +186,9 @@ def resize_imgs_temp(images_data, progress_bar, multiplier=None, size_x=None, si
             file.write(temp_filename, arcname=os.path.basename(temp_filename))
             os.remove(temp_filename)
 
-            if (i+1) % 50 == 0:
+            if (i+1) % 20 == 0:
                 print(f'[! RESIZER - {get_datetime(True)}] {i+1} images resized for petition {petition_id}')
+                st.write(f'{i+1} images resized...')
     
     shutil.rmtree(aux_path)
     print(f'[! RESIZER - {get_datetime(True)}] Total of {len(images_data)} images resized for petiton {petition_id}')

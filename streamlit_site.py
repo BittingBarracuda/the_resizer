@@ -4,11 +4,12 @@ from streamlit_extras.buy_me_a_coffee import button as kofi_button
 import streamlit as st
 import os
 
-MAX_FREE_FILES      = 100
+MAX_FREE_FILES      = 1_000
 FILE_UPLOADER_KEY   = 'file_uploader_key'
 MULTIPLIER_SEL      = 'mult_selected'
 NUMERIC_STATE       = 'numeric_state'
 SLIDER_STATE        = 'slider_state'
+STOP_PROCESSING     = 'stop_processing'
 
 def delete_file_st(zipfile_name):
     print(f'[! STREAMLIT - {get_datetime(True)}] Downloading {zipfile_name} --- Contains {len(file_uploader)} files!')
@@ -18,6 +19,29 @@ def update_slider():
     st.session_state[SLIDER_STATE] = st.session_state[NUMERIC_STATE]
 def update_numeric():
     st.session_state[NUMERIC_STATE] = st.session_state[SLIDER_STATE]
+
+@st.experimental_dialog('Operation in process...', width='large')
+def show_progress(images_data, multiplier=None, size_x=None, size_y=None, petition_id=''):
+    st.write('Please, do not close this dialog while the operation is being processed.')
+    
+    if not st.session_state[STOP_PROCESSING]:
+        st.session_state[STOP_PROCESSING] = True
+        progress_bar = st.progress(0, 'Operation in process. Please wait.')
+        zipfile_name = resize_imgs_temp(images_data, progress_bar, multiplier, size_x, size_y, petition_id)
+
+        with open(os.path.join('files', zipfile_name), 'rb') as file:
+            progress_bar.progress(1.0, 'Process completed!')
+            download_button = st.download_button('Download data!', 
+                                                key='download_button',
+                                                data=file,
+                                                file_name=zipfile_name,
+                                                on_click=delete_file_st,
+                                                args=(zipfile_name, ),
+                                                mime='application/zip')
+    else:
+        progress_bar = st.progress(1.0, 'Process completed!')
+        if st.button('Close', use_container_width=True):
+            st.rerun()
 
 @st.experimental_dialog('Maximum number of files reached', width="large")
 def max_files_dialog(uploaded_files):
@@ -32,6 +56,8 @@ if NUMERIC_STATE not in st.session_state:
     st.session_state[NUMERIC_STATE] = 1.0
 if SLIDER_STATE not in st.session_state:
     st.session_state[SLIDER_STATE] = 1.0
+if STOP_PROCESSING not in st.session_state:
+    st.session_state[STOP_PROCESSING] = False
 
 st.set_page_config(page_title="Simple Bulk Image Resizer")
 st.title('SIMPLE BULK IMAGE RESIZER')
@@ -43,7 +69,7 @@ aux = [
     '''2. ✅**Select how you want to resize your images**✅:
     - **Size multiplier**: Adjust the size of your image(s) by a specified factor. This option will not alter the aspect ratio. For example, choosing a multiplier of 2.0 will double the size of your image(s).
     - **Horizontal and vertical sizes**: Specify the exact dimensions of your image(s) in pixels. Note that this may change the aspect ratio of your images.''',
-    '''3. ⏳Once you have selected a resizing method and set the corresponding parameters (using the slider or the text boxes below), click the ***Start conversion*** button to begin the process. A progress bar will appear below this button once the process starts. Please note that the conversion may take some time depending on the number of images, their sizes, the new sizes, and the current server load.''',
+    '''3. ⏳Once you have selected a resizing method and set the corresponding parameters (using the slider or the text boxes below), click the ***Start conversion*** button to begin the process. A dialog with a progress bar will appear once the process starts. Please note that the conversion may take some time depending on the number of images, their sizes, the new sizes, and the current server load.''',
     '''4. ⬇️ When the process is complete, a ***Download data!*** button will appear below the progress bar. Click it to **download a .zip file containing all the resized images.**''',
     '**Note**: You can clear your uploaded files using the ***Clear uploaded files*** button. This will delete all the uploaded files, allowing you to process a new batch of images.'
 ]
@@ -105,8 +131,7 @@ with c2:
 
 
 if start_conversion and (file_uploader is not None):
-    # st.markdown('#')
-    progress_bar = st.progress(0, 'Operation in process. Please wait.')
+    st.session_state[STOP_PROCESSING] = False
     n = len(file_uploader)
     petition_id = f'{generate_random_string(k=20)}_{get_datetime()}'
     
@@ -115,19 +140,9 @@ if start_conversion and (file_uploader is not None):
         file_uploader = file_uploader[:MAX_FREE_FILES]
 
     if select_box == 'Size multiplier':
-        zipfile_name = resize_imgs_temp(file_uploader, progress_bar, multiplier=dimension_slider, petition_id=petition_id)
+        show_progress(file_uploader, multiplier=dimension_slider, petition_id=petition_id)
     else:
-        zipfile_name = resize_imgs_temp(file_uploader, progress_bar, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
-        
-    with open(os.path.join('files', zipfile_name), 'rb') as file:
-        progress_bar.progress(1.0, 'Process completed!')
-        download_button = st.download_button('Download data!', 
-                                            key='download_button',
-                                            data=file,
-                                            file_name=zipfile_name,
-                                            on_click=delete_file_st,
-                                            args=(zipfile_name, ),
-                                            mime='application/zip')
+        show_progress(file_uploader, size_x=x_dim, size_y=y_dim, petition_id=petition_id)
 
 if delete_button:
     st.session_state[FILE_UPLOADER_KEY] += 1
