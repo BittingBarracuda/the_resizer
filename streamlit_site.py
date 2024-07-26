@@ -1,4 +1,4 @@
-from resizer import resize_image, resize_imgs_temp ,delete_file, get_datetime, generate_random_string
+from resizer import resize_images_threads, resize_imgs_temp ,delete_file, get_datetime, generate_random_string
 from streamlit_extras.buy_me_a_coffee import button as kofi_button
 
 import streamlit as st
@@ -21,13 +21,13 @@ def update_numeric():
     st.session_state[NUMERIC_STATE] = st.session_state[SLIDER_STATE]
 
 @st.experimental_dialog('Operation in process...', width='large')
-def show_progress(images_data, multiplier=None, size_x=None, size_y=None, petition_id=''):
+def show_progress(images_data, multiplier=None, size_x=None, size_y=None, petition_id='', keep_ratio=False):
     st.write('Please, do not close this dialog while the operation is being processed.')
     
     if not st.session_state[STOP_PROCESSING]:
         st.session_state[STOP_PROCESSING] = True
         progress_bar = st.progress(0, 'Operation in process. Please wait.')
-        zipfile_name = resize_imgs_temp(images_data, progress_bar, multiplier, size_x, size_y, petition_id)
+        zipfile_name = resize_images_threads(images_data, progress_bar, multiplier, size_x, size_y, petition_id)
 
         with open(os.path.join('files', zipfile_name), 'rb') as file:
             progress_bar.progress(1.0, 'Process completed!')
@@ -119,6 +119,12 @@ with c2:
                             min_value=1,
                             step=1,
                             disabled=(not st.session_state[MULTIPLIER_SEL]))
+
+# keep_ratio = False
+# if st.session_state[MULTIPLIER_SEL]:
+#     keep_ratio = st.checkbox('Keep aspect ratio',
+#                              value=False,
+#                              key='keep_ratio')
 
 st.markdown('######')   
 c1, c2 = st.columns(2)

@@ -1,4 +1,9 @@
+from threading import Thread, Lock
+from queue import Queue
 from datetime import datetime
+from streamlit.runtime.scriptrunner import add_script_run_ctx
+from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
+
 import streamlit as st
 import numpy as np
 import zipfile
@@ -152,7 +157,10 @@ def resize_image_np(images_data, progress_bar, multiplier=None, size_x=None, siz
 
     return merge_np_images(all_files_names, progress_bar)
 
-def resize_imgs_temp(images_data, progress_bar, multiplier=None, size_x=None, size_y=None, petition_id=''):
+def resize_imgs_temp(images_data, progress_bar, multiplier=None, size_x=None, size_y=None, petition_id='', keep_ratio=False):
+    # if keep_ratio:
+    #     resize_all_images_cv2(images_data, progress_bar, size_y, size_x, petition_id)
+
     progress_per_img = 1.0 / len(images_data)
     zipfile_name = f'{generate_random_string()}_{get_datetime()}.zip'
     aux_path = os.path.join(IMGS_DIR, petition_id)
@@ -193,3 +201,113 @@ def resize_imgs_temp(images_data, progress_bar, multiplier=None, size_x=None, si
     shutil.rmtree(aux_path)
     print(f'[! RESIZER - {get_datetime(True)}] Total of {len(images_data)} images resized for petiton {petition_id}')
     return zipfile_name
+
+# def resize_all_images_cv2(images_data, progress_bar, height, width, petition_id=''):
+#     progress_per_img = 1.0 / len(images_data)
+#     zipfile_name = f'{generate_random_string()}_{get_datetime()}.zip'
+#     aux_path = os.path.join(IMGS_DIR, petition_id)
+    
+#     try:
+#         os.mkdir(aux_path)
+#     except FileExistsError:
+#         pass
+
+#     with zipfile.ZipFile(os.path.join('files', zipfile_name), 'w') as file:
+#         for i, image_data in enumerate(images_data):
+#             progress_bar.progress((i + 1) * progress_per_img, TEXT_1)
+#             jpg_as_np = np.fromstring(image_data.getvalue(), dtype=np.uint8)
+#             img_cv = cv2.imdecode(jpg_as_np, cv2.IMREAD_COLOR)
+            
+#             try:
+#                 background = np.zeros((width, height, 3))
+#                 x, y = img_cv.shape[0], img_cv.shape[1]
+
+#                 if x > y:
+#                     new_width = width
+#                     new_height = min(height, int((y * width) / x))
+#                 else:
+#                     new_height = height
+#                     new_width = min(width, int((x * height) / y))
+
+#                 new_img = cv2.resize(img_cv, (new_height, new_width))
+#                 center = (width // 2, height // 2)
+#                 delta_x = new_width // 2
+#                 delta_y = new_height // 2
+
+#                 aux_x = range(center[0]-delta_x,center[0]+delta_x)
+#                 aux_y = range(center[1]-delta_y,center[1]+delta_y)
+#                 background[center[0]-delta_x:center[0]+delta_x, center[1]-delta_y:center[1]+delta_y] = new_img[:min(len(list(aux_x)), new_img.shape[0]), :min(len(list(aux_y)), new_img.shape[1])]
+
+#                 temp_filename = os.path.join(aux_path, image_data.name)
+                
+#                 cv2.imwrite(temp_filename, background)
+#                 file.write(temp_filename, arcname=os.path.basename(temp_filename))
+#                 os.remove(temp_filename)
+
+#                 if (i+1) % 20 == 0:
+#                     print(f'[! RESIZER - {get_datetime(True)}] {i+1} images resized for petition {petition_id}')
+#                     st.write(f'{i+1} images resized...')
+            
+#             except (cv2.error, AttributeError) as e:
+#                 print(e)
+#                 print(f'[!] Error resizing {image_data}, skipping...')
+
+def resize_one_image(q, l, aux_path, zipfile_name, progress_bar, progress_per_img, multiplier=None, size_x=None, size_y=None):
+    image_data = q.get()
+    with zipfile.ZipFile(os.path.join('files', zipfile_name), 'w') as file:
+        jpg_as_np = np.fromstring(image_data.getvalue(), dtype=np.uint8)
+        img = cv2.imdecode(jpg_as_np, cv2.IMREAD_COLOR)
+            
+        if multiplier != None:
+            new_img = cv2.resize(img, 
+                                dsize=None,
+                                fx=multiplier, 
+                                fy=multiplier,
+                                interpolation=cv2.INTER_LANCZOS4)
+        else:
+            new_img = cv2.resize(img,
+                                dsize=(size_x, size_y),
+                                interpolation=cv2.INTER_LANCZOS4)
+            
+        temp_filename = os.path.join(aux_path, image_data.name)
+            
+        cv2.imwrite(temp_filename, new_img)
+        with l:
+            file.write(temp_filename, arcname=os.path.basename(temp_filename))
+        os.remove(temp_filename)
+    
+    with l:
+        progress_bar.progress(1.0 - (q.qsize() * progress_per_img), TEXT_1)
+    q.task_done()
+
+def resize_images_threads(images_data, progress_bar, multiplier=None, size_x=None, size_y=None, petition_id='', keep_ratio=False):
+    progress_per_img = 1.0 / len(images_data)
+    zipfile_name = f'{generate_random_string()}_{get_datetime()}.zip'
+    aux_path = os.path.join(IMGS_DIR, petition_id)
+    ctx = get_script_run_ctx()
+    
+    try:
+        os.mkdir(aux_path)
+    except FileExistsError:
+        pass
+    
+    q = Queue()
+    l = Lock()
+    for image_data in images_data:
+        q.put(image_data)
+    
+    if keep_ratio:
+        threads = [Thread()]
+    else:
+        threads = [Thread(target=resize_one_image, args=(q, l, aux_path, zipfile_name, progress_bar, progress_per_img, multiplier, size_x, size_y)) for _ in range(4)]
+    
+    for thread in threads:
+        add_script_run_ctx(thread, ctx)
+        thread.start()
+    
+    q.join()
+
+    shutil.rmtree(aux_path)
+    print(f'[! RESIZER - {get_datetime(True)}] Total of {len(images_data)} images resized for petiton {petition_id}')
+    return zipfile_name
+    
